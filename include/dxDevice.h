@@ -41,6 +41,8 @@ namespace mini {
 
 			dx_ptr<ID3D11PixelShader> CreatePixelShader (std::vector<BYTE> psCode) const;
 
+			dx_ptr<ID3D11ComputeShader> CreateComputeShader (std::vector<BYTE> csCode) const;
+
 			dx_ptr<ID3D11InputLayout> CreateInputLayout (const D3D11_INPUT_ELEMENT_DESC * elements, unsigned int count,
 				const std::vector<BYTE> & vsCode) const;
 			dx_ptr<ID3D11InputLayout> CreateInputLayout (const std::vector<D3D11_INPUT_ELEMENT_DESC> & elements,
@@ -99,6 +101,9 @@ namespace mini {
 				const ShaderResourceViewDescription & desc) const {
 				return CreateShaderResourceView (texture, &desc);
 			}
+
+			dx_ptr<ID3D11UnorderedAccessView> CreateUnorderedAccessView (const dx_ptr<ID3D11Texture2D> & texture,
+				const D3D11_UNORDERED_ACCESS_VIEW_DESC * desc = nullptr) const;
 
 
 			//Loading textures from image/dds files using stand-alone DDS/WIC loaders

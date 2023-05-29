@@ -54,9 +54,6 @@
     <ClCompile Include="src\particleSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\roomDemo.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\textureGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -70,6 +67,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\windowApplication.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\environmentMapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rooms\roomDemoShadow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rooms\roomDemoTex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rooms\roomDuck.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -125,9 +134,6 @@
     <ClInclude Include="include\ptr_vector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\roomDemo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\textureGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -143,5 +149,69 @@
     <ClInclude Include="include\windowApplication.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\environmentMapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rooms\roomDemoShadow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rooms\roomDemoTex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rooms\roomDuck.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="shaders\colorTexPS.hlsl" />
+    <FxCompile Include="shaders\envMapPS.hlsl" />
+    <FxCompile Include="shaders\envMapVS.hlsl" />
+    <FxCompile Include="shaders\lightAndShadowPS.hlsl" />
+    <FxCompile Include="shaders\multiTexPS.hlsl" />
+    <FxCompile Include="shaders\multiTexVS.hlsl" />
+    <FxCompile Include="shaders\particleGS.hlsl" />
+    <FxCompile Include="shaders\particlePS.hlsl" />
+    <FxCompile Include="shaders\particleVS.hlsl" />
+    <FxCompile Include="shaders\phongPS.hlsl" />
+    <FxCompile Include="shaders\phongVS.hlsl" />
+    <FxCompile Include="shaders\texturedPS.hlsl" />
+    <FxCompile Include="shaders\texturedVS.hlsl" />
+    <FxCompile Include="shaders\waterCS.hlsl" />
+    <FxCompile Include="shaders\waterPS.hlsl" />
+    <FxCompile Include="shaders\waterVS.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\textures\brick_wall.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\textures\carpet.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\textures\lautrec_divan.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\textures\light_att.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\textures\light_cookie.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\textures\perlin.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\textures\smoke.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\textures\smokecolors.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\meshes\chair_back.mesh" />
+    <None Include="resources\meshes\chair_seat.mesh" />
+    <None Include="resources\meshes\lamp.mesh" />
+    <None Include="resources\meshes\monitor.mesh" />
+    <None Include="resources\meshes\screen.mesh" />
+    <None Include="resources\meshes\teapot.mesh" />
   </ItemGroup>
 </Project>

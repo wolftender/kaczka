@@ -39,7 +39,7 @@ int DxApplication::MainLoop () {
 }
 
 void DxApplication::Render () {
-	const float clearColor[] = { 0.5f, 0.5f, 1.0f, 1.0f };
+	const float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	m_device.context ()->ClearRenderTargetView (m_backBuffer.get (), clearColor);
 	m_device.context ()->ClearDepthStencilView (m_depthBuffer.get (),
 		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);

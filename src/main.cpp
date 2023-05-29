@@ -1,6 +1,7 @@
 ﻿#include "exceptions.h"
 #include "rooms/roomDemoTex.h"
 #include "rooms/roomDemoShadow.h"
+#include "rooms/roomDuck.h"
 
 using namespace std;
 using namespace mini;
@@ -13,8 +14,8 @@ int WINAPI wWinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine
 	CoInitializeEx (nullptr, COINIT_APARTMENTTHREADED);
 
 	try {
-		//RoomDemoTexture app (hInstance);
-		RoomDemoShadow app (hInstance);
+		//RoomDemoTextured app (hInstance);
+		RoomDuck app (hInstance);
 		exitCode = app.Run ();
 	} catch (Exception & e) {
 		MessageBoxW (nullptr, e.getMessage ().c_str (), L"Błąd", MB_OK);

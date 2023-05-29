@@ -109,6 +109,19 @@ dx_ptr<ID3D11PixelShader> DxDevice::CreatePixelShader (vector<BYTE> psCode) cons
 	return result;
 }
 
+dx_ptr<ID3D11ComputeShader> mini::DxDevice::CreateComputeShader (std::vector<BYTE> csCode) const {
+	ID3D11ComputeShader * result = nullptr;
+	auto hr = m_device->CreateComputeShader (reinterpret_cast<const void*> (csCode.data ()),
+		csCode.size (), nullptr, &result);
+
+	dx_ptr<ID3D11ComputeShader> shader {result};
+	if (FAILED (hr)) {
+		THROW_DX(hr);
+	}
+
+	return shader;
+}
+
 dx_ptr<ID3D11InputLayout>
 DxDevice::CreateInputLayout (const D3D11_INPUT_ELEMENT_DESC * elements, unsigned int count, const vector<BYTE> & vsCode) const {
 	ID3D11InputLayout * temp = nullptr;
@@ -160,6 +173,20 @@ dx_ptr<ID3D11ShaderResourceView> mini::DxDevice::CreateShaderResourceView (const
 	if (FAILED (hr))
 		THROW_DX (hr);
 	return resourceView;
+}
+
+dx_ptr<ID3D11UnorderedAccessView> mini::DxDevice::CreateUnorderedAccessView (const dx_ptr<ID3D11Texture2D> & texture, 
+	const D3D11_UNORDERED_ACCESS_VIEW_DESC * desc) const {
+	
+	ID3D11UnorderedAccessView * uav = nullptr;
+	auto hr = m_device->CreateUnorderedAccessView (texture.get (), desc, &uav);
+
+	if (FAILED (hr)) {
+		THROW_DX(hr);
+	}
+
+	dx_ptr<ID3D11UnorderedAccessView> result {uav};
+	return result;
 }
 
 dx_ptr<ID3D11ShaderResourceView> mini::DxDevice::CreateShaderResourceView (const std::wstring & texPath) const {
