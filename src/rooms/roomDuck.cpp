@@ -126,24 +126,11 @@ namespace mini::gk2 {
 
 		// generate rain droplets
 		{
-			constexpr float rainData[1] = { 1.0f };
-			constexpr UINT rowPitch = WATER_MAP_WIDTH * sizeof (float);
-			constexpr UINT depthPitch = WATER_MAP_WIDTH * WATER_MAP_HEIGHT * sizeof(float);
-
 			auto rainPixel = m_rain_distr(m_gen);
 			int rainPixelX = rainPixel % WATER_MAP_WIDTH;
 			int rainPixelY = rainPixel / WATER_MAP_WIDTH;
 
-			auto tex = m_waterTexture[m_waterPrev].get ();
-			D3D11_BOX box;
-			box.left = rainPixelX;
-			box.right = rainPixelX + 1;
-			box.top = rainPixelY;
-			box.bottom = rainPixelY + 1;
-			box.front = 0;
-			box.back = 1;
-
-			m_device.context ()->UpdateSubresource (tex, 0, &box, rainData, rowPitch, depthPitch);
+			m_SpawnDropletAt (rainPixelX, rainPixelY);
 
 			m_numDroplets++;
 		}
@@ -156,10 +143,10 @@ namespace mini::gk2 {
 		m_device.context ()->CSSetShaderResources (0, 1, &srv);
 		m_device.context ()->CSSetUnorderedAccessViews (0, 1, &uav, nullptr);
 
-		// texture is 256x256
+		// texture is 512x512
 		// thread group is 16x16
-		// therefore we need 16x16 dispatch
-		m_device.context ()->Dispatch (16, 16, 1);
+		// therefore we need 32x32 dispatch
+		m_device.context ()->Dispatch (32, 32, 1);
 
 		// this has to be done to flush the buffers
 		m_device.context ()->CSSetShader (nullptr, nullptr, 0);
@@ -185,6 +172,23 @@ namespace mini::gk2 {
 		
 		m_DrawMesh (m_waterSurfaceMesh, m_waterSurfaceMatrix);
 		m_device.context ()->PSSetShaderResources (0, 1, nullSrv);
+	}
+
+	void RoomDuck::m_SpawnDropletAt (int px, int py) {
+		constexpr float rainData[1] = { 1.0f };
+		constexpr UINT rowPitch = WATER_MAP_WIDTH * sizeof (float);
+		constexpr UINT depthPitch = WATER_MAP_WIDTH * WATER_MAP_HEIGHT * sizeof (float);
+
+		auto tex = m_waterTexture[m_waterPrev].get ();
+		D3D11_BOX box;
+		box.left = px;
+		box.right = px + 1;
+		box.top = py;
+		box.bottom = py + 1;
+		box.front = 0;
+		box.back = 1;
+
+		m_device.context ()->UpdateSubresource (tex, 0, &box, rainData, rowPitch, depthPitch);
 	}
 
 	void RoomDuck::m_UpdateCameraCB (DirectX::XMMATRIX viewMtx) {

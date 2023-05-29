@@ -20,8 +20,8 @@ namespace mini::gk2 {
 			void Render () override;
 
 		private:
-			static constexpr unsigned int WATER_MAP_WIDTH = 256;
-			static constexpr unsigned int WATER_MAP_HEIGHT = 256;
+			static constexpr unsigned int WATER_MAP_WIDTH = 512;
+			static constexpr unsigned int WATER_MAP_HEIGHT = 512;
 
 			dx_ptr<ID3D11Buffer> m_cbWorldMatrix;
 			dx_ptr<ID3D11Buffer> m_cbViewMatrix;
@@ -55,6 +55,8 @@ namespace mini::gk2 {
 			std::uniform_int_distribution<> m_rain_distr;
 
 		private:
+			void m_SpawnDropletAt (int px, int py);
+
 			void m_UpdateCameraCB (DirectX::XMMATRIX viewMtx);
 			void m_UpdateCameraCB () { m_UpdateCameraCB (m_camera.getViewMatrix ()); }
 

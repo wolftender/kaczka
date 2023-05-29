@@ -1,7 +1,7 @@
 Texture2D<float> gPrevTexture : register(t0);
 RWTexture2D<float> gOutTexture : register(u0);
 
-static const float N = 256.0f;
+static const float N = 512.0f;
 static const float h = 2.0f / (N - 1.0f);
 static const float c = 1.0f;
 static const float dt = 1.0f / N;
@@ -38,5 +38,5 @@ void main (uint3 DTid : SV_DispatchThreadID) {
 
 	float res = d * (A * (zl + zr + zu + zd) + B * zc - z_0c);
 	//float res = 1.5f * d * (zl + zr + zu + zd + zc);
-	gOutTexture[DTid.xy].r = max(0.0f, min(1.0f, res));
+	gOutTexture[DTid.xy].r = res;
 }
