@@ -21,7 +21,8 @@ namespace mini::gk2 {
 		UpdateBuffer (m_cbProjectionMatrix, m_projectionMatrix);
 		m_UpdateCameraCB ();
 
-		XMStoreFloat4x4 (&m_waterSurfaceMatrix, XMMatrixRotationX (XM_PIDIV2) * XMMatrixScaling (10.0f, 10.0f, 10.0f));
+		XMStoreFloat4x4 (&m_waterSurfaceMatrix, XMMatrixRotationX (XM_PIDIV2) *
+			XMMatrixScaling (10.0f, 10.0f, 10.0f) * XMMatrixTranslation (0.0f, -2.0f, 0.0f));
 
 		// set light positions
 		m_lightPos[0] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -91,25 +92,61 @@ namespace mini::gk2 {
 
 		// sampler states
 		SamplerDescription sd;
-		sd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-		sd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-		sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		sd.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+		sd.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+		sd.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+		sd.BorderColor[0] = 0.0f;
+		sd.BorderColor[1] = 0.0f;
+		sd.BorderColor[2] = 0.0f;
+		sd.BorderColor[3] = 1.0f;
 
 		m_waterSamplerState = m_device.CreateSamplerState (sd);
 
 		m_waterCurrent = 1;
 		m_waterPrev = 0;
+		m_numDroplets = 0;
 	}
 
-	void RoomDuck::Update (const Clock & c) {
-		static ID3D11ShaderResourceView * nullSrv[1] = {nullptr};
-		static ID3D11UnorderedAccessView * nullUav[1] = {nullptr};
+	constexpr ID3D11ShaderResourceView * nullSrv[1] = { nullptr };
+	constexpr ID3D11UnorderedAccessView * nullUav[1] = { nullptr };
 
+	void RoomDuck::Update (const Clock & c) {
 		std::swap (m_waterCurrent, m_waterPrev);
+
+		/*
+		 * in this step:
+		 *  waterCurrent is the z_{j-1}
+		 *  waterPrev is the z_{j}
+		 *  after shader run waterCurrent is the z_{j+1}!!
+		 */
 		
 		// camera options
 		double dt = c.getFrameTime ();
 		HandleCameraInput (dt);
+
+		// generate rain droplets
+		{
+			constexpr float rainData[1] = { 1.0f };
+			constexpr UINT rowPitch = WATER_MAP_WIDTH * sizeof (float);
+			constexpr UINT depthPitch = WATER_MAP_WIDTH * WATER_MAP_HEIGHT * sizeof(float);
+
+			auto rainPixel = m_rain_distr(m_gen);
+			int rainPixelX = rainPixel % WATER_MAP_WIDTH;
+			int rainPixelY = rainPixel / WATER_MAP_WIDTH;
+
+			auto tex = m_waterTexture[m_waterPrev].get ();
+			D3D11_BOX box;
+			box.left = rainPixelX;
+			box.right = rainPixelX + 1;
+			box.top = rainPixelY;
+			box.bottom = rainPixelY + 1;
+			box.front = 0;
+			box.back = 1;
+
+			m_device.context ()->UpdateSubresource (tex, 0, &box, rainData, rowPitch, depthPitch);
+
+			m_numDroplets++;
+		}
 
 		// update the water texture using compute shader
 		auto srv = m_waterResourceView[m_waterPrev].get ();
@@ -146,6 +183,7 @@ namespace mini::gk2 {
 		m_device.context ()->PSSetSamplers (0, 1, &sampler);
 		
 		m_DrawMesh (m_waterSurfaceMesh, m_waterSurfaceMatrix);
+		m_device.context ()->PSSetShaderResources (0, 1, nullSrv);
 	}
 
 	void RoomDuck::m_UpdateCameraCB (DirectX::XMMATRIX viewMtx) {

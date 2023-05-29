@@ -48,7 +48,7 @@ namespace mini::gk2 {
 			dx_ptr<ID3D11UnorderedAccessView> m_waterUnorderedView[2];
 			dx_ptr<ID3D11SamplerState> m_waterSamplerState;
 
-			int m_waterCurrent, m_waterPrev;
+			int m_waterCurrent, m_waterPrev, m_numDroplets;
 
 			std::random_device m_rd;
 			std::mt19937_64 m_gen;

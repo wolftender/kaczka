@@ -11,6 +11,8 @@ struct PSInput {
 };
 
 float4 main(PSInput i) : SV_TARGET {
-	float bump = bumpMap.Sample(samp, i.localPos.xy);
+	float2 texCoord = 0.5f * (i.localPos.xy + 1.0f);
+
+	float bump = bumpMap.Sample(samp, texCoord);
 	return float4(bump, bump, bump, 1.0f);
 }
