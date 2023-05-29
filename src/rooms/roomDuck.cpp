@@ -1,4 +1,5 @@
 #include "rooms/roomDuck.h"
+#include "exceptions.h"
 
 using namespace DirectX;
 
@@ -9,7 +10,9 @@ namespace mini::gk2 {
 		m_cbProjectionMatrix (m_device.CreateConstantBuffer<XMFLOAT4X4> ()),
 		m_cbViewMatrix (m_device.CreateConstantBuffer<XMFLOAT4X4, 2> ()),
 		m_cbSurfaceColor (m_device.CreateConstantBuffer<XMFLOAT4> ()),
-		m_cbLightPos (m_device.CreateConstantBuffer<XMFLOAT4, 2> ()) {
+		m_cbLightPos (m_device.CreateConstantBuffer<XMFLOAT4, 2> ()),
+		m_gen (m_rd()),
+		m_rain_distr (0, WATER_MAP_WIDTH * WATER_MAP_HEIGHT) {
 
 		// projection matrix update
 		auto s = m_window.getClientSize ();
@@ -62,13 +65,10 @@ namespace mini::gk2 {
 		textureDesc.Height = WATER_MAP_HEIGHT;
 		textureDesc.MipLevels = 1;
 		textureDesc.Format = DXGI_FORMAT_R32_FLOAT;
-		textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-
-		m_waterTexturePrev = m_device.CreateTexture (textureDesc);
-
 		textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 
-		m_waterTextureCurr = m_device.CreateTexture (textureDesc);
+		m_waterTexture[0] = m_device.CreateTexture (textureDesc);
+		m_waterTexture[1] = m_device.CreateTexture (textureDesc);
 
 		//////////
 		ShaderResourceViewDescription srvDesc;
@@ -77,8 +77,8 @@ namespace mini::gk2 {
 		srvDesc.Texture2D.MostDetailedMip = 0;
 		srvDesc.Texture2D.MipLevels = 1;
 
-		m_waterPrevView = m_device.CreateShaderResourceView (m_waterTexturePrev, &srvDesc);
-		m_waterCurrView = m_device.CreateShaderResourceView (m_waterTextureCurr, &srvDesc);
+		m_waterResourceView[0] = m_device.CreateShaderResourceView (m_waterTexture[0], &srvDesc);
+		m_waterResourceView[1] = m_device.CreateShaderResourceView (m_waterTexture[1], &srvDesc);
 
 		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc;
 		ZeroMemory (&uavDesc, sizeof (uavDesc));
@@ -86,7 +86,8 @@ namespace mini::gk2 {
 		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
 		uavDesc.Texture2D.MipSlice = 0;
 
-		m_waterCurrUAV = m_device.CreateUnorderedAccessView (m_waterTextureCurr, &uavDesc);
+		m_waterUnorderedView[0] = m_device.CreateUnorderedAccessView (m_waterTexture[0], &uavDesc);
+		m_waterUnorderedView[1] = m_device.CreateUnorderedAccessView (m_waterTexture[1], &uavDesc);
 
 		// sampler states
 		SamplerDescription sd;
@@ -95,23 +96,28 @@ namespace mini::gk2 {
 		sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
 
 		m_waterSamplerState = m_device.CreateSamplerState (sd);
+
+		m_waterCurrent = 1;
+		m_waterPrev = 0;
 	}
 
 	void RoomDuck::Update (const Clock & c) {
 		static ID3D11ShaderResourceView * nullSrv[1] = {nullptr};
 		static ID3D11UnorderedAccessView * nullUav[1] = {nullptr};
+
+		std::swap (m_waterCurrent, m_waterPrev);
 		
 		// camera options
 		double dt = c.getFrameTime ();
 		HandleCameraInput (dt);
 
 		// update the water texture using compute shader
-		auto prevTexSrv = m_waterPrevView.get ();
-		auto currTexUav = m_waterCurrUAV.get ();
+		auto srv = m_waterResourceView[m_waterPrev].get ();
+		auto uav = m_waterUnorderedView[m_waterCurrent].get ();
 
 		m_device.context ()->CSSetShader (m_waterCS.get (), nullptr, 0);
-		m_device.context ()->CSSetShaderResources (0, 1, &prevTexSrv);
-		m_device.context ()->CSSetUnorderedAccessViews (0, 1, &currTexUav, nullptr);
+		m_device.context ()->CSSetShaderResources (0, 1, &srv);
+		m_device.context ()->CSSetUnorderedAccessViews (0, 1, &uav, nullptr);
 
 		// texture is 256x256
 		// thread group is 16x16
@@ -122,9 +128,6 @@ namespace mini::gk2 {
 		m_device.context ()->CSSetShader (nullptr, nullptr, 0);
 		m_device.context ()->CSSetShaderResources (0, 1, nullSrv);
 		m_device.context ()->CSSetUnorderedAccessViews (0, 1, nullUav, nullptr);
-
-		// this is probaby expensive?
-		m_device.context ()->CopyResource (m_waterTexturePrev.get (), m_waterTextureCurr.get ());
 	}
 
 	void RoomDuck::Render () {
@@ -136,7 +139,7 @@ namespace mini::gk2 {
 		UpdateBuffer (m_cbLightPos, m_lightPos);
 
 		// set textures and sampler state for water
-		auto waterSrv = m_waterCurrView.get ();
+		auto waterSrv = m_waterResourceView[m_waterCurrent].get ();
 		auto sampler = m_waterSamplerState.get ();
 
 		m_device.context ()->PSSetShaderResources (0, 1, &waterSrv);

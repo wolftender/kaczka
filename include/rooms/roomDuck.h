@@ -1,4 +1,6 @@
 #pragma once
+#include <random>
+
 #include "dxApplication.h"
 #include "mesh.h"
 #include "environmentMapper.h"
@@ -41,10 +43,16 @@ namespace mini::gk2 {
 
 			dx_ptr<ID3D11InputLayout> m_inputlayout;
 
-			dx_ptr<ID3D11Texture2D> m_waterTexturePrev, m_waterTextureCurr;
-			dx_ptr<ID3D11ShaderResourceView> m_waterPrevView, m_waterCurrView;
-			dx_ptr<ID3D11UnorderedAccessView> m_waterCurrUAV;
+			dx_ptr<ID3D11Texture2D> m_waterTexture[2];
+			dx_ptr<ID3D11ShaderResourceView> m_waterResourceView[2];
+			dx_ptr<ID3D11UnorderedAccessView> m_waterUnorderedView[2];
 			dx_ptr<ID3D11SamplerState> m_waterSamplerState;
+
+			int m_waterCurrent, m_waterPrev;
+
+			std::random_device m_rd;
+			std::mt19937_64 m_gen;
+			std::uniform_int_distribution<> m_rain_distr;
 
 		private:
 			void m_UpdateCameraCB (DirectX::XMMATRIX viewMtx);
