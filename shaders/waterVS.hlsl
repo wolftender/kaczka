@@ -25,6 +25,7 @@ struct PSInput {
 	float3 worldPos : POSITION1;
 	float3 viewPos : POSITION2;
 	float3 worldNorm : NORMAL0;
+	float3 worldTangent : TANGENT0;
 	float3 viewVec : TEXCOORD0;
 };
 
@@ -36,8 +37,9 @@ PSInput main (VSInput i) {
 	o.viewPos = o.pos.xyz;
 	o.pos = mul (projMatrix, o.pos);
 
-	o.worldNorm = mul (worldMatrix, float4(i.norm, 0.0f)).xyz;
+	o.worldNorm = mul (worldMatrix, float4(0.0, 0.0, -1.0, 0.0)).xyz;
 	o.worldNorm = normalize (o.worldNorm);
+	o.worldTangent = mul (worldMatrix, float4(1.0, 0.0, 0.0, 0.0));
 
 	float3 camPos = mul (invViewMatrix, float4(0.0f, 0.0f, 0.0f, 1.0f)).xyz;
 	o.viewVec = camPos - o.worldPos;

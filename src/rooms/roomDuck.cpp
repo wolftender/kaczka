@@ -179,6 +179,7 @@ namespace mini::gk2 {
 		auto waterSrv = m_waterResourceView[m_waterCurrent].get ();
 		auto sampler = m_waterSamplerState.get ();
 
+		UpdateBuffer (m_cbSurfaceColor, XMFLOAT4 (1.0f, 1.0f, 1.0f, 1.0f));
 		m_device.context ()->PSSetShaderResources (0, 1, &waterSrv);
 		m_device.context ()->PSSetSamplers (0, 1, &sampler);
 		
