@@ -32,7 +32,8 @@ struct PSInput {
 PSInput main (VSInput i) {
 	PSInput o;
 	o.localPos = i.pos;
-	o.worldPos = mul (worldMatrix, float4(i.pos, 1.0f)).xyz;
+
+	o.worldPos = mul (worldMatrix, float4(o.localPos, 1.0f)).xyz;
 	o.pos = mul (viewMatrix, float4(o.worldPos, 1.0f));
 	o.viewPos = o.pos.xyz;
 	o.pos = mul (projMatrix, o.pos);

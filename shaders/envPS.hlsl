@@ -8,7 +8,7 @@ struct VSOutput {
 
 float4 main(VSOutput i) : SV_TARGET {
 	float3 color = envMap.Sample (samp, i.tex).rgb;
-	color = pow (color, 0.4545f);
+	//color = pow (color, 0.4545f);
 
 	return float4(color, 1.0f);
 }

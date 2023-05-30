@@ -28,10 +28,12 @@ namespace mini::gk2 {
 		UpdateBuffer (m_cbProjectionMatrix, m_projectionMatrix);
 		m_UpdateCameraCB ();
 
-		XMStoreFloat4x4 (&m_waterSurfaceMatrix, XMMatrixRotationX (XM_PIDIV2) *
-			XMMatrixScaling (10.0f, 10.0f, 10.0f) * XMMatrixTranslation (0.0f, -2.0f, 0.0f));
+		constexpr float scale = 30.0f;
 
-		XMStoreFloat4x4 (&m_skyboxMatrix, XMMatrixIdentity ());
+		XMStoreFloat4x4 (&m_waterSurfaceMatrix, XMMatrixRotationX (XM_PIDIV2) *
+			XMMatrixScaling (scale, scale, scale) * XMMatrixTranslation (0.0f, -4.0f, 0.0f));
+
+		XMStoreFloat4x4 (&m_skyboxMatrix, XMMatrixScaling (scale, scale, scale));
 
 		// set light positions
 		m_lightPos[0] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -39,8 +41,8 @@ namespace mini::gk2 {
 
 		// load meshes
 		m_meshTeapot = Mesh::LoadMesh (m_device, L"resources/meshes/teapot.mesh");
-		m_waterSurfaceMesh = Mesh::Rectangle (m_device, 1.0f);
-		m_meshSkybox = Mesh::Skybox (m_device, 10.0f, 10.0f);
+		m_waterSurfaceMesh = Mesh::DoubleRect (m_device, 1.0f);
+		m_meshSkybox = Mesh::Skybox (m_device, 1.0f, 1.0f);
 
 		auto vsCode = m_device.LoadByteCode (L"phongVS.cso");
 		auto psCode = m_device.LoadByteCode (L"phongPS.cso");
@@ -108,9 +110,9 @@ namespace mini::gk2 {
 
 		// sampler states
 		SamplerDescription sd;
-		sd.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
-		sd.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
-		sd.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+		sd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		sd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
 		sd.BorderColor[0] = 0.0f;
 		sd.BorderColor[1] = 0.0f;
 		sd.BorderColor[2] = 0.0f;
@@ -179,13 +181,13 @@ namespace mini::gk2 {
 		UpdateBuffer (m_cbLightPos, m_lightPos);
 
 		// set textures and sampler state for water
-		auto waterSrv = m_waterResourceView[m_waterCurrent].get ();
+		ID3D11ShaderResourceView * waterSrv[2] = { m_waterResourceView[m_waterCurrent].get (), m_envTexture.get () };
 		auto envSrv = m_envTexture.get ();
 		auto sampler = m_waterSamplerState.get ();
 
 		// draw water surface
 		UpdateBuffer (m_cbSurfaceColor, XMFLOAT4 (1.0f, 1.0f, 1.0f, 1.0f));
-		m_device.context ()->PSSetShaderResources (0, 1, &waterSrv);
+		m_device.context ()->PSSetShaderResources (0, 2, waterSrv);
 		m_device.context ()->PSSetSamplers (0, 1, &sampler);
 		m_DrawMesh (m_waterSurfaceMesh, m_waterSurfaceMatrix);
 
