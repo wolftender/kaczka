@@ -111,6 +111,7 @@ namespace mini {
 
 		//Mesh Loading
 		static Mesh LoadMesh (const DxDevice & device, const std::wstring & meshPath);
+		static Mesh LoadTexturedMesh (const DxDevice & device, const std::wstring & meshPath);
 
 	private:
 		dx_ptr<ID3D11Buffer> m_indexBuffer;

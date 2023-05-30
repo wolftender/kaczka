@@ -422,3 +422,29 @@ Mesh mini::Mesh::LoadMesh (const DxDevice & device, const std::wstring & meshPat
 		input >> inds[i];
 	return SimpleTriMesh (device, verts, inds);
 }
+
+Mesh mini::Mesh::LoadTexturedMesh (const DxDevice & device, const std::wstring & meshPath) {
+	ifstream input;
+
+	input.exceptions (ios::badbit | ios::failbit | ios::eofbit);
+	input.open (meshPath);
+
+	int vn, in;
+	input >> vn >> in;
+
+	// i will probably fix that later in the file
+	in = in * 3;
+
+	vector<VertexPositionNormalTex> verts (vn);
+
+	for (auto i = 0; i < vn; ++i)
+		input >> verts[i].position.x >> verts[i].position.y >> verts[i].position.z
+		>> verts[i].normal.x >> verts[i].normal.y >> verts[i].normal.z
+		>> verts[i].uv.x >> verts[i].uv.y;
+
+	vector<unsigned short> inds (in);
+	for (auto i = 0; i < in; ++i)
+		input >> inds[i];
+
+	return SimpleTriMesh (device, verts, inds);
+}

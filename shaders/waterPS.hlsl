@@ -63,7 +63,7 @@ float fresnel (float3 N, float3 V) {
 }
 
 float4 main(PSInput i) : SV_TARGET {
-	float2 texCoord = 0.5f * (i.localPos.xy + 1.0f);
+	float2 texCoord = 0.5f * (2.0f * i.localPos.xy + 1.0f);
 
 	// this code converts the bump map to normal map
 	// it takes neighboring heights and constructs normal vectors using cross products

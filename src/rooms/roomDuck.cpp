@@ -5,7 +5,7 @@ using namespace DirectX;
 
 namespace mini::gk2 {
 	RoomDuck::RoomDuck (HINSTANCE appInstance) : 
-		DxApplication (appInstance, 1366, 768, L"Pokój"),
+		DxApplication (appInstance, 1600, 900, L"Pokój"),
 
 		// constant buffers
 		m_cbWorldMatrix (m_device.CreateConstantBuffer<XMFLOAT4X4> ()),
@@ -16,10 +16,19 @@ namespace mini::gk2 {
 
 		// textures
 		m_envTexture (m_device.CreateShaderResourceView (L"resources/textures/cubeMap.dds")),
+		m_duckTexture (m_device.CreateShaderResourceView (L"resources/textures/ducktex.jpg")),
 
 		// random generator
 		m_gen (m_rd()),
-		m_rain_distr (0, WATER_MAP_WIDTH * WATER_MAP_HEIGHT) {
+		m_rain_distr (0, WATER_MAP_WIDTH * WATER_MAP_HEIGHT),
+		m_splineDistrX (-14.0f, 14.0f),
+		m_splineDistrY (-14.0f, 14.0f),
+		
+		// duck animation 
+		m_duckAnimTime (0.0f),
+		m_rainTime (0.0f),
+		m_duckPos{0.0f, 0.0f, 0.0f},
+		m_prevDuckPos{0.0f, 0.0f, 0.0f} {
 
 		// projection matrix update
 		auto s = m_window.getClientSize ();
@@ -28,12 +37,11 @@ namespace mini::gk2 {
 		UpdateBuffer (m_cbProjectionMatrix, m_projectionMatrix);
 		m_UpdateCameraCB ();
 
-		constexpr float scale = 30.0f;
-
 		XMStoreFloat4x4 (&m_waterSurfaceMatrix, XMMatrixRotationX (XM_PIDIV2) *
-			XMMatrixScaling (scale, scale, scale) * XMMatrixTranslation (0.0f, -4.0f, 0.0f));
+			XMMatrixScaling (WORLD_WIDTH, WORLD_HEIGHT, WORLD_DEPTH) * XMMatrixTranslation (0.0f, WATER_LEVEL, 0.0f));
 
-		XMStoreFloat4x4 (&m_skyboxMatrix, XMMatrixScaling (scale, scale, scale));
+		XMStoreFloat4x4 (&m_skyboxMatrix, XMMatrixScaling (WORLD_WIDTH, WORLD_HEIGHT, WORLD_DEPTH));
+		XMStoreFloat4x4 (&m_duckMatrix, XMMatrixScaling (DUCK_SCALE, DUCK_SCALE, DUCK_SCALE));
 
 		// set light positions
 		m_lightPos[0] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -41,6 +49,8 @@ namespace mini::gk2 {
 
 		// load meshes
 		m_meshTeapot = Mesh::LoadMesh (m_device, L"resources/meshes/teapot.mesh");
+		m_duckMesh = Mesh::LoadTexturedMesh (m_device, L"resources/meshes/duck.txt");
+
 		m_waterSurfaceMesh = Mesh::DoubleRect (m_device, 1.0f);
 		m_meshSkybox = Mesh::Skybox (m_device, 1.0f, 1.0f);
 
@@ -66,9 +76,7 @@ namespace mini::gk2 {
 		m_envPS = m_device.CreatePixelShader (psCode);
 
 		m_inputlayout = m_device.CreateInputLayout (VertexPositionNormal::Layout, vsCode);
-
-		m_device.context ()->IASetInputLayout (m_inputlayout.get ());
-		m_device.context ()->IASetPrimitiveTopology (D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		m_SetNormalInputLayout ();
 
 		// We have to make sure all shaders use constant buffers in the same slots!
 		// Not all slots will be use by each shader
@@ -77,6 +85,15 @@ namespace mini::gk2 {
 
 		ID3D11Buffer * psb[] = { m_cbSurfaceColor.get (), m_cbLightPos.get () };
 		m_device.context ()->PSSetConstantBuffers (0, 2, psb); //Pixel Shaders - 0: surfaceColor, 1: lightPos[2]
+
+		// shaders and input layout for the duck (they are different because of UVs)
+		vsCode = m_device.LoadByteCode (L"duckVS.cso");
+		m_duckVS = m_device.CreateVertexShader (vsCode);
+
+		psCode = m_device.LoadByteCode (L"duckPS.cso");
+		m_duckPS = m_device.CreatePixelShader (psCode);
+
+		m_duckInputLayout = m_device.CreateInputLayout (VertexPositionNormalTex::Layout, vsCode);
 
 		// initialize the resource views for compute shader
 		Texture2DDescription textureDesc;
@@ -123,10 +140,31 @@ namespace mini::gk2 {
 		m_waterCurrent = 1;
 		m_waterPrev = 0;
 		m_numDroplets = 0;
+
+		// generate initial spline points
+		m_spline[0] = GenSplinePoint ();
+		m_spline[1] = GenSplinePoint ();
+		m_spline[2] = GenSplinePoint ();
+		m_spline[3] = GenSplinePoint ();
 	}
 
 	constexpr ID3D11ShaderResourceView * nullSrv[1] = { nullptr };
 	constexpr ID3D11UnorderedAccessView * nullUav[1] = { nullptr };
+
+	inline float RoomDuck::deboor (float b00, float b01, float b02, float b03, float t) {
+		float N00 = 1.0;
+		float N10 = (1.0 - t) * N00;
+		float N11 = t * N00;
+		float N20 = ((1.0 - t) * N10) / 2.0;
+		float N21 = ((1.0 + t) * N10 + (2.0 - t) * N11) / 2.0;
+		float N22 = (t * N11) / 2.0;
+		float N30 = ((1.0 - t) * N20) / 3.0;
+		float N31 = ((2.0 + t) * N20 + (2.0 - t) * N21) / 3.0;
+		float N32 = ((1.0 + t) * N21 + (3.0 - t) * N22) / 3.0;
+		float N33 = (t * N22) / 3.0;
+
+		return b00 * N30 + b01 * N31 + b02 * N32 + b03 * N33;
+	}
 
 	void RoomDuck::Update (const Clock & c) {
 		std::swap (m_waterCurrent, m_waterPrev);
@@ -142,13 +180,57 @@ namespace mini::gk2 {
 		double dt = c.getFrameTime ();
 		HandleCameraInput (dt);
 
+		// duck animation
+		{
+			m_duckAnimTime += dt * 0.25f;
+
+			if (m_duckAnimTime > 1.0f) {
+				m_duckAnimTime -= floorf (m_duckAnimTime);
+
+				m_spline[0] = m_spline[1];
+				m_spline[1] = m_spline[2];
+				m_spline[2] = m_spline[3];
+				m_spline[3] = GenSplinePoint ();
+			}
+
+			float nx = deboor (m_spline[0].x, m_spline[1].x, m_spline[2].x, m_spline[3].x, m_duckAnimTime + 0.01f);
+			float ny = deboor (m_spline[0].y, m_spline[1].y, m_spline[2].y, m_spline[3].y, m_duckAnimTime + 0.01f);
+
+			float cx = deboor (m_spline[0].x, m_spline[1].x, m_spline[2].x, m_spline[3].x, m_duckAnimTime);
+			float cy = deboor (m_spline[0].y, m_spline[1].y, m_spline[2].y, m_spline[3].y, m_duckAnimTime);
+			float cz = WATER_LEVEL;
+
+			m_prevDuckPos = m_duckPos;
+			m_duckPos = { cx, cz, cy };
+
+			float duckAngle = atan2f (cy - ny, nx - cx);
+
+			XMStoreFloat4x4 (&m_duckMatrix,
+				XMMatrixRotationY (duckAngle + XM_PI) *
+				XMMatrixScaling (DUCK_SCALE, DUCK_SCALE, DUCK_SCALE) *
+				XMMatrixTranslation (m_duckPos.x, m_duckPos.y, m_duckPos.z));
+		}
+
 		// generate rain droplets
 		{
-			auto rainPixel = m_rain_distr(m_gen);
-			int rainPixelX = rainPixel % WATER_MAP_WIDTH;
-			int rainPixelY = rainPixel / WATER_MAP_WIDTH;
+			m_rainTime += dt;
 
-			m_SpawnDropletAt (rainPixelX, rainPixelY);
+			if (m_rainTime > RAIN_DELAY) {
+				auto rainPixel = m_rain_distr (m_gen);
+				int rainPixelX = rainPixel % WATER_MAP_WIDTH;
+				int rainPixelY = rainPixel / WATER_MAP_WIDTH;
+
+				m_SpawnDropletAt (rainPixelX, rainPixelY);
+
+				m_rainTime = 0.0f;
+			}
+
+			constexpr float HALF_WIDTH = WORLD_WIDTH / 2.0f;
+			constexpr float HALF_DEPTH = WORLD_DEPTH / 2.0f;
+
+			int duckPixelX = WATER_MAP_WIDTH * ((HALF_WIDTH + m_duckPos.x) / WORLD_WIDTH);
+			int duckPixelY = WATER_MAP_HEIGHT * ((HALF_DEPTH + m_duckPos.z) / WORLD_DEPTH);
+			m_SpawnDropletAt (duckPixelX, duckPixelY);
 
 			m_numDroplets++;
 		}
@@ -177,12 +259,16 @@ namespace mini::gk2 {
 
 		ResetRenderTarget ();
 		m_UpdateCameraCB ();
+		m_SetNormalInputLayout ();
+
 		m_SetShaders (m_waterVS, m_waterPS);
 		UpdateBuffer (m_cbLightPos, m_lightPos);
 
 		// set textures and sampler state for water
 		ID3D11ShaderResourceView * waterSrv[2] = { m_waterResourceView[m_waterCurrent].get (), m_envTexture.get () };
 		auto envSrv = m_envTexture.get ();
+		auto duckSrv = m_duckTexture.get ();
+
 		auto sampler = m_waterSamplerState.get ();
 
 		// draw water surface
@@ -196,11 +282,36 @@ namespace mini::gk2 {
 		m_device.context ()->PSSetShaderResources (0, 1, &envSrv);
 		m_DrawMesh (m_meshSkybox, m_skyboxMatrix);
 
+		// draw the duck
+		m_SetNormalTexInputLayout ();
+		m_SetShaders (m_duckVS, m_duckPS);
+		m_device.context ()->PSSetShaderResources (0, 1, &duckSrv);
+		m_DrawMesh (m_duckMesh, m_duckMatrix);
+
 		m_device.context ()->PSSetShaderResources (0, 1, nullSrv);
 	}
 
+	RoomDuck::SplinePoint RoomDuck::GenSplinePoint () {
+		SplinePoint p;
+		p.x = m_splineDistrX (m_gen);
+		p.y = m_splineDistrY (m_gen);
+		p.z = WATER_LEVEL;
+
+		return p;
+	}
+
+	void RoomDuck::m_SetNormalInputLayout () {
+		m_device.context ()->IASetInputLayout (m_inputlayout.get ());
+		m_device.context ()->IASetPrimitiveTopology (D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	}
+
+	void RoomDuck::m_SetNormalTexInputLayout () {
+		m_device.context ()->IASetInputLayout (m_duckInputLayout.get ());
+		m_device.context ()->IASetPrimitiveTopology (D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	}
+
 	void RoomDuck::m_SpawnDropletAt (int px, int py) {
-		constexpr float rainData[1] = { 1.0f };
+		constexpr float rainData[1] = { 2.0f };
 		constexpr UINT rowPitch = WATER_MAP_WIDTH * sizeof (float);
 		constexpr UINT depthPitch = WATER_MAP_WIDTH * WATER_MAP_HEIGHT * sizeof (float);
 

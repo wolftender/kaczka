@@ -20,9 +20,9 @@ void main (uint3 DTid : SV_DispatchThreadID) {
 	uint du = curr.y;
 	uint db = height - du;
 	uint mindist = min(dl, min(dr, min(du, db)));
-	float l = float (mindist) / (2.0f * float (width));
+	float l = float (mindist) / (2.0f * float (width)) + 0.5f;
 
-	float d = 0.95f * min (1.0f, l / 0.15f);
+	float d = 0.95f * min (1.0f, 3.0f * l / 0.22f);
 
 	uint2 top = uint2 (curr.x, curr.y - 1);
 	uint2 bottom = uint2 (curr.x, curr.y + 1);
