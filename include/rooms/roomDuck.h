@@ -31,14 +31,17 @@ namespace mini::gk2 {
 
 			Mesh m_meshTeapot;
 			Mesh m_waterSurfaceMesh;
+			Mesh m_meshSkybox;
 
 			dx_ptr<ID3D11VertexShader> m_phongVS;
 			dx_ptr<ID3D11PixelShader> m_phongPS;
 			dx_ptr<ID3D11ComputeShader> m_waterCS;
 			dx_ptr<ID3D11PixelShader> m_waterPS;
 			dx_ptr<ID3D11VertexShader> m_waterVS;
+			dx_ptr<ID3D11PixelShader> m_envPS;
+			dx_ptr<ID3D11VertexShader> m_envVS;
 
-			XMFLOAT4X4 m_projectionMatrix, m_waterSurfaceMatrix;
+			XMFLOAT4X4 m_projectionMatrix, m_waterSurfaceMatrix, m_skyboxMatrix;
 			XMFLOAT4 m_lightPos[2];
 
 			dx_ptr<ID3D11InputLayout> m_inputlayout;
@@ -47,6 +50,8 @@ namespace mini::gk2 {
 			dx_ptr<ID3D11ShaderResourceView> m_waterResourceView[2];
 			dx_ptr<ID3D11UnorderedAccessView> m_waterUnorderedView[2];
 			dx_ptr<ID3D11SamplerState> m_waterSamplerState;
+
+			dx_ptr<ID3D11ShaderResourceView> m_envTexture;
 
 			int m_waterCurrent, m_waterPrev, m_numDroplets;
 

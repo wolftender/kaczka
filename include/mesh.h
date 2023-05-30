@@ -103,6 +103,12 @@ namespace mini {
 		static std::vector<unsigned short> DiskIdx (unsigned int slices);
 		static Mesh Disk (const DxDevice & device, unsigned int slices, float radius = 1.0f) { return SimpleTriMesh (device, DiskVerts (slices, radius), DiskIdx (slices)); }
 
+		static std::vector<VertexPositionNormal> SkyboxVerts (float side = 1.0f, float height = 1.0f);
+		static std::vector<unsigned short> SkyboxIdx ();
+		static Mesh Skybox (const DxDevice & device, float side = 1.0f, float height = 1.0f) {
+			return SimpleTriMesh (device, SkyboxVerts (side, height), SkyboxIdx ());
+		}
+
 		//Mesh Loading
 		static Mesh LoadMesh (const DxDevice & device, const std::wstring & meshPath);
 

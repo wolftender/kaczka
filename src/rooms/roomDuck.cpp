@@ -6,11 +6,18 @@ using namespace DirectX;
 namespace mini::gk2 {
 	RoomDuck::RoomDuck (HINSTANCE appInstance) : 
 		DxApplication (appInstance, 1366, 768, L"Pokój"),
+
+		// constant buffers
 		m_cbWorldMatrix (m_device.CreateConstantBuffer<XMFLOAT4X4> ()),
 		m_cbProjectionMatrix (m_device.CreateConstantBuffer<XMFLOAT4X4> ()),
 		m_cbViewMatrix (m_device.CreateConstantBuffer<XMFLOAT4X4, 2> ()),
 		m_cbSurfaceColor (m_device.CreateConstantBuffer<XMFLOAT4> ()),
 		m_cbLightPos (m_device.CreateConstantBuffer<XMFLOAT4, 2> ()),
+
+		// textures
+		m_envTexture (m_device.CreateShaderResourceView (L"resources/textures/cubeMap.dds")),
+
+		// random generator
 		m_gen (m_rd()),
 		m_rain_distr (0, WATER_MAP_WIDTH * WATER_MAP_HEIGHT) {
 
@@ -24,6 +31,8 @@ namespace mini::gk2 {
 		XMStoreFloat4x4 (&m_waterSurfaceMatrix, XMMatrixRotationX (XM_PIDIV2) *
 			XMMatrixScaling (10.0f, 10.0f, 10.0f) * XMMatrixTranslation (0.0f, -2.0f, 0.0f));
 
+		XMStoreFloat4x4 (&m_skyboxMatrix, XMMatrixIdentity ());
+
 		// set light positions
 		m_lightPos[0] = { 1.0f, 1.0f, 1.0f, 1.0f };
 		m_lightPos[1] = { -1.0f, -1.0f, -1.0f, 1.0f };
@@ -31,6 +40,7 @@ namespace mini::gk2 {
 		// load meshes
 		m_meshTeapot = Mesh::LoadMesh (m_device, L"resources/meshes/teapot.mesh");
 		m_waterSurfaceMesh = Mesh::Rectangle (m_device, 1.0f);
+		m_meshSkybox = Mesh::Skybox (m_device, 10.0f, 10.0f);
 
 		auto vsCode = m_device.LoadByteCode (L"phongVS.cso");
 		auto psCode = m_device.LoadByteCode (L"phongPS.cso");
@@ -46,6 +56,12 @@ namespace mini::gk2 {
 
 		psCode = m_device.LoadByteCode (L"waterPS.cso");
 		m_waterPS = m_device.CreatePixelShader (psCode);
+
+		vsCode = m_device.LoadByteCode (L"envVS.cso");
+		m_envVS = m_device.CreateVertexShader (vsCode);
+
+		psCode = m_device.LoadByteCode (L"envPS.cso");
+		m_envPS = m_device.CreatePixelShader (psCode);
 
 		m_inputlayout = m_device.CreateInputLayout (VertexPositionNormal::Layout, vsCode);
 
@@ -164,13 +180,20 @@ namespace mini::gk2 {
 
 		// set textures and sampler state for water
 		auto waterSrv = m_waterResourceView[m_waterCurrent].get ();
+		auto envSrv = m_envTexture.get ();
 		auto sampler = m_waterSamplerState.get ();
 
+		// draw water surface
 		UpdateBuffer (m_cbSurfaceColor, XMFLOAT4 (1.0f, 1.0f, 1.0f, 1.0f));
 		m_device.context ()->PSSetShaderResources (0, 1, &waterSrv);
 		m_device.context ()->PSSetSamplers (0, 1, &sampler);
-		
 		m_DrawMesh (m_waterSurfaceMesh, m_waterSurfaceMatrix);
+
+		// draw environment cube
+		m_SetShaders (m_envVS, m_envPS);
+		m_device.context ()->PSSetShaderResources (0, 1, &envSrv);
+		m_DrawMesh (m_meshSkybox, m_skyboxMatrix);
+
 		m_device.context ()->PSSetShaderResources (0, 1, nullSrv);
 	}
 

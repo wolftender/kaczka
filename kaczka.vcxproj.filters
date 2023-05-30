@@ -179,6 +179,8 @@
     <FxCompile Include="shaders\waterCS.hlsl" />
     <FxCompile Include="shaders\waterPS.hlsl" />
     <FxCompile Include="shaders\waterVS.hlsl" />
+    <FxCompile Include="shaders\envPS.hlsl" />
+    <FxCompile Include="shaders\envVS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="resources\textures\brick_wall.jpg">
