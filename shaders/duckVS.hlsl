@@ -26,6 +26,7 @@ struct PSInput {
 	float3 norm : NORMAL0;
 	float3 viewVec : TEXCOORD0;
 	float2 uv : TEXCOORD1;
+	float3 front : NORMAL1;
 };
 
 PSInput main (VSInput i) {
@@ -41,6 +42,7 @@ PSInput main (VSInput i) {
 
 	o.viewVec = camPos - o.worldPos;
 	o.uv = i.uv;
+	o.front = normalize (mul (worldMatrix, float4 (1.0f, 0.0f, 0.0f, 0.0f)).xyz);
 
 	return o;
 }
