@@ -103,8 +103,9 @@ float4 main(PSInput i) : SV_TARGET {
 
 	reflected = reflect (-viewVec, normal);
 
-	float3 reflectedColor = envMap.Sample (samp, intersectRay (i.worldPos / 30.0f, reflected));
-	float3 refractedColor = envMap.Sample (samp, intersectRay (i.worldPos / 30.0f, refracted));
+	// we have to undo the scaling, this is why 15.0f is here!!!!!
+	float3 reflectedColor = envMap.Sample (samp, intersectRay (i.worldPos / 15.0f, reflected));
+	float3 refractedColor = envMap.Sample (samp, intersectRay (i.worldPos / 15.0f, refracted));
 
 	float f = fresnel (normal, viewVec);
 	float3 color = f * reflectedColor + (1.0f - f) * refractedColor;
